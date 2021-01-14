@@ -1,0 +1,209 @@
+import os
+import time
+import concurrent.futures
+import sys
+from PyQt5.QtWidgets import QApplication
+from PyQt5.QtCore import QUrl
+from bs4 import BeautifulSoup as bs
+from PyQt5.QtWebEngineWidgets import QWebEnginePage
+from time import sleep
+import pickle
+
+dir_path = os.path.dirname(os.path.abspath(__file__))  # global directory path
+
+
+class JavaScrip_Parsing:
+    '''
+    this class will takes args: list of urls address (import_url_list) and list of tuples DOM elements (elements)
+    format urls list : [url 0, url1, url 2, ....]
+    format elements list of tuples: [(tag 0, class name 0), (tag 1, class name 1), (tag 1, class name 1), ...].
+    in the end new data file will create in folder "Results".
+    '''
+
+    def __init__(self, import_url_list, elements):
+        self.create_folders()
+        self.directory = (f"{dir_path}\Temp", f"{dir_path}\Results")
+        self.import_url_list = import_url_list
+        self.elements = elements
+
+    def create_folders(self):
+        '''
+        :return: this function will create 2 folders : Temp and Results.
+        '''
+
+        folders_name = ('Temp', 'Results')
+        dir_path = os.path.dirname(os.path.abspath(__file__))
+        for create in folders_name:
+            rpath_to_dir = f"{dir_path}\\{create}"
+            try:
+                os.makedirs(rpath_to_dir)
+            except FileExistsError:
+                pass
+
+    def delete_files(self, folder):
+        '''
+        :param folder: folder path in the system.
+        :return: delete all existing files in the arg folder
+        '''
+
+        for the_file in os.listdir(folder):
+            file_path = os.path.join(folder, the_file)
+            try:
+                if os.path.isfile(file_path):
+                    os.unlink(file_path)
+            except Exception as e:
+                print(e)
+
+    def create_file_results(self):
+        '''
+        :return: if file results.dat is not exist in dir *\Results\
+        this function will create it .
+        '''
+
+        open(f"{self.directory[1]}\\results.dat", "x")
+
+    def file_create(self):
+        '''
+        :return: this func will create the execution files to directory 'Temp'
+        '''
+
+        self.delete_files(self.directory[0])  # first we must delete all existing files in 'Temp' folder
+        self.delete_files(self.directory[1])  # we will delete 'results.dat' from 'Results' folder to avoid duplication
+        self.create_file_results()  # then i will create execution files to directory 'Temp'.
+        file_number = 0 # count the number of python files that we will run in the execution.
+        for url_address in self.import_url_list:  # at the end of this process python fill will create based on below temp
+            fileCreator = (
+                f"import sys\nsys.path.append('{dir_path}')\n"
+                f"from JavaScript_To_BS4.javascript_parsing import BeautifulSoup_Parsing\n\ndef run_script_js():\n"
+                f"\tweb = '{url_address}'\n"
+                f"\telements_in_DOM = {self.elements}\n"
+                f"\tsoup_run = BeautifulSoup_Parsing()\n\tsoup_run.bs4_scripting_func(web, elements_in_DOM)\n"
+                f"if __name__ == '__main__': run_script_js()")
+            filename = f'js_to_bs{file_number}'
+            txt_file = open(os.path.join(self.directory[0], f'{filename}.py'), 'a', newline='')
+            txt_file.write(fileCreator)
+            file_number += 1
+
+    def loop_files(self, starting_point):
+        '''
+        :param starting_point: it's the telling range built in func what is the starting point for this Thread
+        :return: executing the asynchronous python files in the shell using by os.system.
+        after file finish to run it will remove from system by os.remove func.
+        '''
+
+        last_index = len(self.import_url_list) # creating the end point for range built in func
+        for py_file_num in range(starting_point, last_index, 3):
+            os.system(f'py js_to_bs{py_file_num}.py')
+            os.remove(f'js_to_bs{py_file_num}.py')
+            print(f'Finish load python: {py_file_num} ') # tell us the of this py file mission is done
+
+    def searchFiles(self):
+        '''
+        :return: we will call this func to run our parsing script from outside .
+        '''
+
+        self.file_create()
+        os.chdir(self.directory[0])
+        os.path.join(self.directory[0])
+        number_of_threads = 3  # how many threads we want to run
+        start = time.perf_counter()
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            results = [executor.submit(self.loop_files, starting_point) for starting_point in range(number_of_threads)]
+            for run in concurrent.futures.as_completed(results):
+                run.result()
+        finish = time.perf_counter()
+        print(f'Finished in: {round((finish - start) / 60, 2)} Minutes')
+        return self.read_file()
+
+    def read_file(self):
+        '''
+        :return: will return results.dat from dir *\Results\
+        '''
+        loading_file = f"{self.directory[1]}\\results.dat"
+        with open(loading_file, "rb") as f:
+            return pickle.load(f)
+
+
+class Page(QWebEnginePage):
+    '''
+    this class will phentomly opened  the website and run javascript code inside the web.
+    at the end of this mission it will return the source of html code after js funcs executed .
+    this source of html will be delivered and convert to BeautifulSoup object by using class BeautifulSoup_Parsing.
+    for this purpose we will use PyQt5 framework
+    '''
+
+    def __init__(self, url, sec=9):
+        print(url)
+        self.app = QApplication(sys.argv)
+        QWebEnginePage.__init__(self)
+        self.html = ''
+        self.second = sec
+        self.loadFinished.connect(self._on_load_finished)
+        self.load(QUrl(url))
+        self.app.exec_()
+
+    def _on_load_finished(self):
+        sleep(self.second)  # 19#
+        self.html = self.toHtml(self.Callable)
+
+    def Callable(self, html_str):
+        self.html = html_str
+        self.app.quit()
+
+
+class BeautifulSoup_Parsing:
+    '''
+    BeautifulSoup_Parsing class gets the html source from Page class by mediator python file running js_to_bs{number}.py
+    and return list of expecting results aiming by the element the we gave.
+    '''
+
+    def __init__(self):
+        self.saving_file = f"{dir_path}\Results\\results.dat"
+
+    def bs4_scripting_func(self, url, elements):
+        page = Page(url)  # call Page Class for web page running include js functions .
+        soup = bs(page.html, 'html.parser')  # creating BeautifulSoup object.
+        lst = [soup.find_all(key_val[0], class_=key_val[1]) for key_val in elements]  # find the required elements in the DOM
+        txt_cleaning = self.only_text_results(lst)  # clear the lst results
+        txt_cleaning.insert(len(txt_cleaning), url)  # insert url address
+        self.save_results([txt_cleaning])  # saving in the file
+        return
+
+    def only_text_results(self, lst):
+        '''
+        :param lst: list of un-cleaning results
+        :return: list of only the text from the DOM
+        '''
+
+        clean_elements = []
+        for inner_list in lst:
+            lst = []
+            for tag_in_the_dom in inner_list:
+                lst.append(tag_in_the_dom.text)
+            clean_elements.append(lst)
+        return clean_elements
+
+    def save_results(self, data):
+        '''
+        :param data: list of data for saving
+        '''
+
+        with open(self.saving_file, "rb") as f:
+            try:  # if there is any data in self.saving_file
+                bt_data = pickle.load(f)
+                self.write_to_file(bt_data, data)
+            except EOFError:  # self.saving_file is empty
+                self.write_to_file(data)
+
+    def write_to_file(self, data, new_data=None):
+        '''
+        :param data: old data from self.saving_file if exist, if not data will == results from bs4_scripting_func
+        :param new_data: only if self.saving_file is not empty then new_data == results from bs4_scripting_func
+        :return: dump in results.dat file
+        '''
+
+        with open(self.saving_file, "wb") as f:
+            if new_data is None:
+                pickle.dump(data, f)
+            else:
+                pickle.dump(data + new_data, f)
