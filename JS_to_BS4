@@ -207,3 +207,12 @@ class BeautifulSoup_Parsing:
                 pickle.dump(data, f)
             else:
                 pickle.dump(data + new_data, f)
+
+
+if __name__ == '__main__':
+    url_address_list = []  # [url 0, url 1, url 2, .....] 
+    elements = [(), ()]  # [(tag 0, class name 0), (tag 1, class name 1), (tag 1, class name 1), ...].
+
+    parsing_results = JavaScrip_Parsing(url_address_list, elements)
+    for line_by_line in parsing_results.searchFiles():
+        print(line_by_line)
