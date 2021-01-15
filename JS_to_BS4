@@ -57,7 +57,7 @@ class JavaScrip_Parsing:
     def create_file_results(self):
         '''
         :return: if file results.dat is not exist in dir *\Results\
-        this function will create it .
+                this function will create it .
         '''
 
         open(f"{self.directory[1]}\\results.dat", "x")
@@ -88,7 +88,7 @@ class JavaScrip_Parsing:
         '''
         :param starting_point: it's the telling range built in func what is the starting point for this Thread
         :return: executing the asynchronous python files in the shell using by os.system.
-        after file finish to run it will remove from system by os.remove func.
+                 after file finish to run it will remove from system by os.remove func.
         '''
 
         last_index = len(self.import_url_list)  # creating the end point for range built in func
@@ -99,6 +99,9 @@ class JavaScrip_Parsing:
 
     def searchFiles(self, URL_LIST=None, ELEMENTS=None):
         '''
+
+        :param URL_LIST, ELEMENTS: optional args if you prefer to keep running with the same object
+                                    but change the original __init__ args of the object.
         :return: we will call this func to run our parsing script from outside .
         '''
 
@@ -221,11 +224,8 @@ class BeautifulSoup_Parsing:
 
 
 if __name__ == '__main__':
-    # url_address_list = []  # [url 0, url 1, url 2, .....]
-    # elements = [(), ()]  # [(tag 0, class name 0), (tag 1, class name 1), (tag 1, class name 1), ...].
-
+    
+    url_address_list = []  # [url 0, url 1, url 2, .....]
+    elements = [(), ()]  # [(tag 0, class name 0), (tag 1, class name 1), (tag 1, class name 1), ...].
     parsing_results = JavaScrip_Parsing(url_address_list, elements)
-
-    for line_by_line in parsing_results.searchFiles():
-        print(line_by_line)
-        # print(list(zip(line_by_line[1], line_by_line[0])))
+    see_results = parsing_results.searchFiles()
