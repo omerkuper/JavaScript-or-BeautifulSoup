@@ -20,7 +20,7 @@ class JavaScrip_Parsing:
     in the end new data file will create in folder "Results".
     '''
 
-    def __init__(self, import_url_list, elements):
+    def __init__(self, import_url_list=None, elements=None):
         self.create_folders()
         self.directory = (f"{dir_path}\Temp", f"{dir_path}\Results")
         self.import_url_list = import_url_list
@@ -67,10 +67,10 @@ class JavaScrip_Parsing:
         :return: this func will create the execution files to directory 'Temp'
         '''
 
-        self.delete_files(self.directory[0])  # first we must delete all existing files in 'Temp' folder
-        self.delete_files(self.directory[1])  # we will delete 'results.dat' from 'Results' folder to avoid duplication
-        self.create_file_results()  # then i will create execution files to directory 'Temp'.
-        file_number = 0  # count the number of python files that we will run in the execution.
+        self.delete_files(self.directory[0])      # first we must delete all existing files in 'Temp' folder
+        self.delete_files(self.directory[1])      # we will delete 'results.dat' from 'Results' folder to avoid duplication
+        self.create_file_results()                # then i will create execution files to directory 'Temp'.
+        file_number = 0                           # count the number of python files that we will run in the execution.
         for url_address in self.import_url_list:  # at the end of this process python fill will create based on below temp
             fileCreator = (
                 f"import sys\nsys.path.append('{dir_path}')\n"
@@ -84,18 +84,18 @@ class JavaScrip_Parsing:
             txt_file.write(fileCreator)
             file_number += 1
 
-    def loop_files(self, starting_point):
+    def loop_files(self, starting_point, wait):
         '''
         :param starting_point: it's the telling range built in func what is the starting point for this Thread
         :return: executing the asynchronous python files in the shell using by os.system.
                  after file finish to run it will remove from system by os.remove func.
         '''
-
-        last_index = len(self.import_url_list)  # creating the end point for range built in func
+        sleep(wait * 2)
+        last_index = len(self.import_url_list)                      # creating the end point for range built in func
         for py_file_num in range(starting_point, last_index, 3):
             os.system(f'py js_to_bs{py_file_num}.py')
             os.remove(f'js_to_bs{py_file_num}.py')
-            print(f'Finish load python: {py_file_num} ')  # tell us the of this py file mission is done
+            print(f'Finish load python: {py_file_num} ')            # tell us the of this py file mission is done
 
     def searchFiles(self, URL_LIST=None, ELEMENTS=None):
         '''
@@ -118,10 +118,10 @@ class JavaScrip_Parsing:
         self.file_create()
         os.chdir(self.directory[0])
         os.path.join(self.directory[0])
-        number_of_threads = 3  # how many threads we want to run
+        number_of_threads = 3               # how many threads we want to run
         start = time.perf_counter()
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            results = [executor.submit(self.loop_files, starting_point) for starting_point in range(number_of_threads)]
+            results = [executor.submit(self.loop_files, starting_point, wait=starting_point) for starting_point in range(number_of_threads)]
             for run in concurrent.futures.as_completed(results):
                 run.result()
         finish = time.perf_counter()
@@ -174,13 +174,13 @@ class BeautifulSoup_Parsing:
         self.saving_file = f"{dir_path}\Results\\results.dat"
 
     def bs4_scripting_func(self, url, elements):
-        page = Page(url)  # call Page Class for web page running include js functions .
-        soup = bs(page.html, 'html.parser')  # creating BeautifulSoup object.
+        page = Page(url)                                   # call Page Class for web page running include js functions .
+        soup = bs(page.html, 'html.parser')                # creating BeautifulSoup object.
         lst = [soup.find_all(key_val[0], class_=key_val[1]) for key_val in
-               elements]  # find the required elements in the DOM
-        txt_cleaning = self.only_text_results(lst)  # clear the lst results
-        txt_cleaning.insert(len(txt_cleaning), url)  # insert url address
-        self.save_results([txt_cleaning])  # saving in the file
+               elements]                                    # find the required elements in the DOM
+        txt_cleaning = self.only_text_results(lst)          # clear the lst results
+        txt_cleaning.insert(len(txt_cleaning), url)         # insert url address
+        self.save_results([txt_cleaning])                   # saving in the file
         return
 
     def only_text_results(self, lst):
@@ -203,10 +203,10 @@ class BeautifulSoup_Parsing:
         '''
 
         with open(self.saving_file, "rb") as f:
-            try:  # if there is any data in self.saving_file
+            try:                                    # if there is any data in self.saving_file
                 bt_data = pickle.load(f)
                 self.write_to_file(bt_data, data)
-            except EOFError:  # self.saving_file is empty
+            except EOFError:                        # self.saving_file is empty
                 self.write_to_file(data)
 
     def write_to_file(self, data, new_data=None):
@@ -224,8 +224,8 @@ class BeautifulSoup_Parsing:
 
 
 if __name__ == '__main__':
-    
-    url_address_list = []  # [url 0, url 1, url 2, .....]
-    elements = [(), ()]  # [(tag 0, class name 0), (tag 1, class name 1), (tag 1, class name 1), ...].
-    parsing_results = JavaScrip_Parsing(url_address_list, elements)
-    see_results = parsing_results.searchFiles()
+    # url_address_list = []  # [url 0, url 1, url 2, .....]
+    # elements = [(), ()]  # [(tag 0, class name 0), (tag 1, class name 1), (tag 1, class name 1), ...].
+
+    for line_by_line in parsing_results.searchFiles(url_address_list, elements):
+        print(line_by_line)
