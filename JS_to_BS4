@@ -154,6 +154,20 @@ class JavaScrip_Parsing:
         with open(loading_file, "rb") as f:
             return pickle.load(f)
 
+    def test_results_in_JS(self, URL_LIST, ELEMENTS):
+        '''
+        :param URL_LIST: list of urls address
+        :param ELEMENTS: looking elements
+        :return: checking the results with/ without JS in the DOM
+        '''
+
+        for index in range(2):
+            javascript = all([index])  # True or False
+            print(f'Checking JS={javascript}')
+            self.searchFiles(URL_LIST[:1], ELEMENTS, JS=javascript)
+            print(self.read_file())
+            print(f'Done JS={javascript} !\n\n')
+
 
 class Page(QWebEnginePage):
     '''
@@ -198,7 +212,7 @@ class BeautifulSoup_Parsing:
         '''
 
         print(url)
-        web = requests.get(url, headers={'User-Agent': 'Chrome/87.0.4280.88'})
+        web = requests.get(url, headers={'User-Agent': 'Chrome/87.0.4280.88'}, timeout=5)
         url_result = web.content
         soup_results = bs(url_result, "html.parser")
         return soup_results
@@ -269,9 +283,15 @@ if __name__ == '__main__':
 
     parsing_results = JavaScrip_Parsing()
 
-    for line_by_line in parsing_results.searchFiles(url_address_list, elements, JS=False):
-        print(line_by_line)
+
+    # # for line_by_line in parsing_results.searchFiles(url_address_list, elements, JS=False):
+    # #     print(line_by_line)
 
 
-    for line_by_line in parsing_results.searchFiles(url_address_list, elements):
-        print(line_by_line)
+    # elements = [('div', 'bui-price-display__value prco-inline-block-maker-helper ')]
+
+    # for line_by_line in parsing_results.searchFiles(url_address_list, elements):
+    #     print(line_by_line)
+
+
+    parsing_results.test_results_in_JS(url_address_list, elements)
